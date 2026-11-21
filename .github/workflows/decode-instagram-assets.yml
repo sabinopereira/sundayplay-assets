@@ -1,0 +1,36 @@
+name: Decode Instagram assets
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "instagram/**/*.b64"
+
+permissions:
+  contents: write
+
+jobs:
+  decode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode base64 images and commit
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          files=(instagram/**/*.b64)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No .b64 files to decode"
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            out="${f%.b64}"
+            base64 -d "$f" > "$out"
+            rm "$f"
+            echo "Decoded $out"
+          done
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Decode Instagram JPEG assets"
+          git push
